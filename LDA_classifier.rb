@@ -21,8 +21,12 @@ class LDAClassifier
   def initialize(dataset = [], options = {})
     @dataset            = dataset
     @dataset_normalized = []
-    @matrix_conv        = {}
-    @normalization      = options[:normalization] || :linear # linear or standard_deviation
+    
+    @matrix_conv     = {}
+    @matrix_conv_inv = {}
+    @matrix_conv_det = {}
+
+    @normalization      = options[:normalization] || :none # linear or standard_deviation
 
     set_classes
     normalize
@@ -84,7 +88,10 @@ class LDAClassifier
   #   [var1, var2.. varn]
   # ]
   def build_matrix_conv
-    @matrix_conv  = {}
+    @matrix_conv     = {}
+    @matrix_conv_inv = {}
+    @matrix_conv_det = {}
+
     mean          = mean_features_by_class
 
     @classes.each do |klasse|
@@ -105,7 +112,9 @@ class LDAClassifier
         end
       end
 
-      @matrix_conv[klasse] = Matrix::rows matrix
+      @matrix_conv[klasse]     = Matrix::rows matrix
+      @matrix_conv_inv[klasse] = @matrix_conv[klasse].inverse
+      @matrix_conv_det[klasse] = @matrix_conv[klasse].det      
     end 
 
     @matrix_conv
@@ -114,12 +123,16 @@ class LDAClassifier
   private 
 
   def discriminating(klasse, features)
-    conv_matrix   = @matrix_conv[klasse]
-    mean_features = Matrix[mean_features_by_class[klasse]]
-    features      = Matrix[features]
+    conv_matrix     = @matrix_conv[klasse]
+    matrix_conv_det = @matrix_conv_det[klasse]
+    matrix_conv_inv = @matrix_conv_inv[klasse]
 
-    result        = ((features-mean_features)*conv_matrix.inverse*(features-mean_features).transpose)/count_classes
-    result[0,0]
+    mean_features   = Matrix[mean_features_by_class[klasse]]
+    features        = Matrix[features]
+
+    features_sub_mean_features = (features - mean_features)
+
+    result          = ((features_sub_mean_features*matrix_conv_inv*features_sub_mean_features.transpose)[0,0])/count_classes
   end
 
   def set_classes
@@ -214,10 +227,10 @@ class LDAClassifier
 end
 
 
-# lda = LDAClassifier.new([
+# qda = QDAClassifier.new([
 #       [feature1, feature2, feature3, ..., featureN, "class2"],
 #       [feature1, feature2, feature3, ..., featureN, "class2"]
 #     ])
 # 
-# lda.classify([feature1, feature2, feature3, ..., featureN])
+# qda.classify([feature1, feature2, feature3, ..., featureN])
 #

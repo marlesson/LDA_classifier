@@ -7,8 +7,9 @@ require '../../LDA_classifier'
 # Read dataset
 
 t_hits = {}
-vezes  = 10
+vezes  = 100
 total  = 0
+
 vezes.times do |t|
   
   t_hits[t] = 0
@@ -44,7 +45,6 @@ vezes.times do |t|
   t_hits[t] = (hit_classify.size.to_f/dataset_pred.size)
   total += t_hits[t]/vezes
 end
-
 
 fout = File.open("log_k.txt", "w")
 t_hits.each do |k, val|
